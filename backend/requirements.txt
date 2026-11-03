@@ -1,0 +1,40 @@
+# ── Web Framework ──
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+python-multipart>=0.0.9
+websockets>=12.0
+
+# ── Database ──
+sqlalchemy[asyncio]>=2.0.30
+psycopg[binary]>=3.1.0
+aiosqlite>=0.20.0
+geoalchemy2>=0.15.0
+alembic>=1.13.0
+
+# ── Pydantic ──
+pydantic>=2.9.0
+pydantic-settings>=2.5.0
+
+# ── Geospatial (Stage 14) ──
+shapely>=2.0.0
+
+# ── Object Storage ──
+minio>=7.2.0
+
+# ── ML Tracking ──
+# mlflow>=2.16.0
+
+# ── Orchestration ──
+# prefect>=3.0.0
+
+# ── XML (Stage 16 — CAP alerts) ──
+lxml>=5.2.0
+
+# ── Utilities ──
+python-dateutil>=2.9.0
+httpx>=0.27.0
+orjson>=3.10.0
+
+# ── Testing ──
+pytest>=8.3.0
+pytest-asyncio>=0.24.0

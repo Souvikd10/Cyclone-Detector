@@ -1,0 +1,128 @@
+{
+  "storm_id": "2020121N10087",
+  "timestamp": "2020-05-18T12:00:00Z",
+  "detection": {
+    "present": true,
+    "confidence": 0.97,
+    "center": {
+      "lat": 16.0,
+      "lon": 85.2
+    },
+    "bbox": [
+      13.0,
+      82.2,
+      19.0,
+      88.2
+    ],
+    "mask_url": "minio://cyclone-artifacts/inference/2020121N10087/mask.png"
+  },
+  "structure": {
+    "eye_present": true,
+    "eye_confidence": 0.92,
+    "eye_center": {
+      "lat": 16.05,
+      "lon": 85.18
+    },
+    "eye_diameter_km": 45.0,
+    "symmetry": 0.85,
+    "circularity": 0.82
+  },
+  "current_state": {
+    "category": "SuCS",
+    "stage": "mature",
+    "pattern": "eye_pattern"
+  },
+  "forecast": {
+    "track": [
+      {
+        "t": "+6h",
+        "lat": 16.8,
+        "lon": 85.5,
+        "cone_radius_km": 55
+      },
+      {
+        "t": "+12h",
+        "lat": 17.5,
+        "lon": 86.0,
+        "cone_radius_km": 90
+      },
+      {
+        "t": "+24h",
+        "lat": 19.0,
+        "lon": 87.0,
+        "cone_radius_km": 145
+      },
+      {
+        "t": "+48h",
+        "lat": 21.5,
+        "lon": 88.5,
+        "cone_radius_km": 260
+      },
+      {
+        "t": "+72h",
+        "lat": 23.5,
+        "lon": 89.5,
+        "cone_radius_km": 390
+      }
+    ],
+    "intensity": [
+      {
+        "t": "+6h",
+        "wind_kt": 125,
+        "interval": [
+          115,
+          135
+        ]
+      },
+      {
+        "t": "+12h",
+        "wind_kt": 115,
+        "interval": [
+          100,
+          130
+        ]
+      },
+      {
+        "t": "+24h",
+        "wind_kt": 90,
+        "interval": [
+          70,
+          110
+        ]
+      },
+      {
+        "t": "+48h",
+        "wind_kt": 55,
+        "interval": [
+          35,
+          75
+        ]
+      },
+      {
+        "t": "+72h",
+        "wind_kt": 30,
+        "interval": [
+          15,
+          45
+        ]
+      }
+    ]
+  },
+  "ri": {
+    "probability": 0.12,
+    "confidence": 0.88
+  },
+  "uncertainty": {
+    "novelty_score": 1.2,
+    "human_review_flag": false
+  },
+  "xai": {
+    "gradcam_url": "minio://cyclone-artifacts/inference/2020121N10087/gradcam.png",
+    "explanation_tags": [
+      "well-defined eye",
+      "strong eyewall",
+      "symmetric convection",
+      "peak intensity"
+    ]
+  }
+}

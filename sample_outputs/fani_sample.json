@@ -1,0 +1,128 @@
+{
+  "storm_id": "2019121N08085",
+  "timestamp": "2019-04-30T12:00:00Z",
+  "detection": {
+    "present": true,
+    "confidence": 0.94,
+    "center": {
+      "lat": 13.5,
+      "lon": 83.6
+    },
+    "bbox": [
+      10.5,
+      80.6,
+      16.5,
+      86.6
+    ],
+    "mask_url": "minio://cyclone-artifacts/inference/2019121N08085/mask.png"
+  },
+  "structure": {
+    "eye_present": true,
+    "eye_confidence": 0.78,
+    "eye_center": {
+      "lat": 13.52,
+      "lon": 83.58
+    },
+    "eye_diameter_km": 35.0,
+    "symmetry": 0.72,
+    "circularity": 0.68
+  },
+  "current_state": {
+    "category": "ESCS",
+    "stage": "intensifying",
+    "pattern": "CDO"
+  },
+  "forecast": {
+    "track": [
+      {
+        "t": "+6h",
+        "lat": 14.2,
+        "lon": 83.7,
+        "cone_radius_km": 50
+      },
+      {
+        "t": "+12h",
+        "lat": 14.8,
+        "lon": 83.9,
+        "cone_radius_km": 85
+      },
+      {
+        "t": "+24h",
+        "lat": 16.5,
+        "lon": 84.5,
+        "cone_radius_km": 140
+      },
+      {
+        "t": "+48h",
+        "lat": 19.5,
+        "lon": 85.5,
+        "cone_radius_km": 250
+      },
+      {
+        "t": "+72h",
+        "lat": 22.0,
+        "lon": 87.0,
+        "cone_radius_km": 375
+      }
+    ],
+    "intensity": [
+      {
+        "t": "+6h",
+        "wind_kt": 100,
+        "interval": [
+          85,
+          115
+        ]
+      },
+      {
+        "t": "+12h",
+        "wind_kt": 115,
+        "interval": [
+          95,
+          130
+        ]
+      },
+      {
+        "t": "+24h",
+        "wind_kt": 125,
+        "interval": [
+          105,
+          140
+        ]
+      },
+      {
+        "t": "+48h",
+        "wind_kt": 85,
+        "interval": [
+          60,
+          110
+        ]
+      },
+      {
+        "t": "+72h",
+        "wind_kt": 45,
+        "interval": [
+          25,
+          65
+        ]
+      }
+    ]
+  },
+  "ri": {
+    "probability": 0.68,
+    "confidence": 0.75
+  },
+  "uncertainty": {
+    "novelty_score": 0.9,
+    "human_review_flag": false
+  },
+  "xai": {
+    "gradcam_url": "minio://cyclone-artifacts/inference/2019121N08085/gradcam.png",
+    "explanation_tags": [
+      "developing eye",
+      "rapid intensification likely",
+      "organized convection",
+      "low wind shear environment"
+    ]
+  }
+}

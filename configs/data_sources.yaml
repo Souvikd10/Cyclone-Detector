@@ -1,0 +1,75 @@
+# =============================================================================
+# Data Source Configuration
+# =============================================================================
+# Switch data_mode to "real" once MOSDAC credentials are available.
+
+data_mode: "synthetic"  # "synthetic" | "real" (switch to "real" for Colab/production with MOSDAC)
+
+# ── MOSDAC (INSAT-3D/3DR/3DS) ──
+mosdac:
+  base_url: "https://mosdac.gov.in"
+  api_endpoint: "https://mosdac.gov.in/apidata"
+  username: ""  # Set via MOSDAC_USERNAME env var or .env file
+  password: ""  # Set via MOSDAC_PASSWORD env var or .env file
+  products:
+    ir_tir1:
+      dataset_id: "3DIMG_L1B_STD_TIR1"
+      description: "Thermal IR Band 1 (10.8 μm)"
+    ir_tir2:
+      dataset_id: "3DIMG_L1B_STD_TIR2"
+      description: "Thermal IR Band 2 (12.0 μm)"
+    wv:
+      dataset_id: "3DIMG_L1B_STD_WV"
+      description: "Water Vapor (6.8 μm)"
+    vis:
+      dataset_id: "3DIMG_L1B_STD_VIS"
+      description: "Visible (0.65 μm)"
+  download_dir: "data/raw/mosdac"
+
+# ── IBTrACS (Best Track) ──
+ibtracs:
+  csv_url: "https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r01/access/csv/ibtracs.NI.list.v04r01.csv"
+  netcdf_url: "https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r01/access/netcdf/IBTrACS.NI.v04r01.nc"
+  download_dir: "data/raw/ibtracs"
+  basin_filter: "NI"  # North Indian Ocean
+
+# ── ERA5 / CDS (Environmental fields) ──
+era5:
+  api_url: "https://cds.climate.copernicus.eu/api/v2"
+  api_key: ""           # fill when available
+  variables:
+    - "sea_surface_temperature"
+    - "vertical_wind_shear"       # derived: u200 - u850
+    - "relative_humidity"         # 500–700 hPa
+    - "ocean_heat_content"        # OHC from ORAS5 or similar
+  pressure_levels: [200, 500, 700, 850]
+  download_dir: "data/raw/era5"
+
+# ── Target storms for prototyping ──
+target_storms:
+  - storm_id: "2020121N10087"     # Amphan
+    name: "AMPHAN"
+    year: 2020
+    basin: "NI"
+    time_range: ["2020-05-16T00:00:00Z", "2020-05-21T00:00:00Z"]
+  - storm_id: "2019121N08085"     # Fani
+    name: "FANI"
+    year: 2019
+    basin: "NI"
+    time_range: ["2019-04-26T00:00:00Z", "2019-05-04T00:00:00Z"]
+  - storm_id: "2023126N10091"     # Mocha
+    name: "MOCHA"
+    year: 2023
+    basin: "NI"
+    time_range: ["2023-05-08T00:00:00Z", "2023-05-15T00:00:00Z"]
+
+# ── Synthetic data settings (used when data_mode == "synthetic") ──
+synthetic:
+  image_size: 512
+  channels: ["IR_TIR1", "IR_TIR2", "WV", "VIS", "SST", "WIND_SHEAR", "MOISTURE"]
+  num_channels: 7
+  lat_range: [0, 30]      # North Indian Ocean
+  lon_range: [60, 100]
+  grid_resolution_deg: 0.05
+  temporal_resolution_h: 6
+  noise_std: 0.05

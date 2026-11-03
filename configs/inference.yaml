@@ -1,0 +1,53 @@
+# =============================================================================
+# Inference & Runtime Configuration
+# =============================================================================
+
+# ── Device ──
+device: "auto"                    # "auto" | "cuda" | "cpu"
+
+# ── Model Checkpoints ──
+checkpoints:
+  encoder: "checkpoints/shared_encoder.pt"
+  detection: "checkpoints/detection_head.pt"
+  structure: "checkpoints/structure_head.pt"
+  temporal: "checkpoints/temporal_block.pt"
+  classification: "checkpoints/classification_head.pt"
+  forecast: "checkpoints/forecast_model.pt"
+  ri: "checkpoints/ri_model.json"          # XGBoost model
+  fusion: "checkpoints/fusion_module.pt"
+
+# ── Uncertainty Thresholds ──
+uncertainty:
+  novelty_threshold: 3.0           # Mahalanobis distance → flag if above
+  ri_ambiguity_range: [0.3, 0.7]   # RI probability → flag if in this range
+  human_review_novelty: 3.0
+  cone_scaling_factors:            # empirical scaling by lead time (hours)
+    6: 50
+    12: 85
+    24: 140
+    48: 250
+    72: 380
+
+# ── MinIO Object Storage ──
+minio:
+  endpoint: "localhost:9000"
+  access_key: "minioadmin"
+  secret_key: "minioadmin"
+  secure: false
+  bucket: "cyclone-artifacts"
+  prefix: "inference"
+
+# ── MLflow ──
+mlflow:
+  tracking_uri: "./mlruns"
+  experiment_name: "cyclone-prediction"
+  log_artifacts: true
+
+# ── Output ──
+output:
+  save_local: true
+  local_dir: "outputs"
+  save_gradcam: true
+  save_mask: true
+  gradcam_colormap: "jet"
+  mask_format: "png"

@@ -1,0 +1,124 @@
+# =============================================================================
+# Model Architecture Configuration
+# =============================================================================
+
+# ── Shared Encoder (Stage 4) ──
+encoder:
+  backbone: "convnext_tiny"        # options: convnext_tiny, convnext_small, vit_small_patch16_224
+  pretrained: true
+  input_adapter_channels: 256      # fused feature channels → backbone input
+  feature_dim: 768                 # output feature vector dimension
+  spatial_feature_scale: 16        # spatial downscale factor (H/16 × W/16)
+  drop_path_rate: 0.1
+
+# ── Source Encoders (Stage 3) ──
+source_encoder:
+  num_layers: 4
+  base_channels: 16
+  output_channels: 64
+  kernel_size: 3
+  activation: "gelu"
+
+# ── Reliability Network (Stage 3) ──
+reliability:
+  hidden_dim: 128
+  num_sources: 7                   # IR1, IR2, WV, VIS, SST, shear, moisture
+  metadata_dim: 4                  # time-of-day sin/cos, quality flag, coverage %
+  temperature: 1.0                 # softmax temperature
+
+# ── Attention Fusion (Stage 3) ──
+fusion:
+  embed_dim: 256
+  num_heads: 4
+  dropout: 0.1
+  use_positional_encoding: true
+
+# ── Detection Head (Stage 5) ──
+detection:
+  segmentation_arch: "FPN"         # from segmentation-models-pytorch
+  segmentation_encoder: "resnet34"
+  mask_threshold: 0.5
+  min_confidence: 0.3
+
+# ── Structure Head (Stage 6) ──
+structure:
+  eye_classifier_hidden: 256
+  attention_pool_heads: 4
+  min_eye_confidence: 0.5
+
+# ── Temporal Block (Stage 7) ──
+temporal:
+  model_type: "convlstm"          # options: convlstm, transformer
+  sequence_length: 8              # number of time steps (× 6h = 48h history)
+  # ConvLSTM params
+  convlstm_hidden: 256
+  convlstm_layers: 2
+  convlstm_kernel: 3
+  # Transformer params
+  transformer_heads: 8
+  transformer_layers: 4
+  transformer_dim: 512
+
+# ── Classification Head (Stage 8) ──
+classification:
+  categories:                     # IMD scale
+    - "D"       # Depression
+    - "DD"      # Deep Depression
+    - "CS"      # Cyclonic Storm
+    - "SCS"     # Severe Cyclonic Storm
+    - "VSCS"    # Very Severe Cyclonic Storm
+    - "ESCS"    # Extremely Severe Cyclonic Storm
+    - "SuCS"    # Super Cyclonic Storm
+  stages:
+    - "forming"
+    - "intensifying"
+    - "mature"
+    - "weakening"
+    - "dissipating"
+  patterns:
+    - "CDO"             # Central Dense Overcast
+    - "banding"
+    - "shear"
+    - "annular"
+    - "eye_pattern"
+    - "ragged_eye"
+    - "pinhole_eye"
+
+# ── Forecast Model (Stage 9) ──
+forecast:
+  horizons_h: [6, 12, 24, 48, 72]
+  transformer_decoder_layers: 4
+  transformer_decoder_heads: 8
+  transformer_decoder_dim: 512
+  env_scalar_dim: 8               # SST, shear, OHC, moisture, etc.
+
+# ── RI Model (Stage 10) ──
+ri:
+  ri_threshold_kt: 30             # ≥30 kt increase in 24h
+  xgboost_params:
+    max_depth: 6
+    learning_rate: 0.1
+    n_estimators: 200
+    objective: "binary:logistic"
+    eval_metric: "auc"
+    scale_pos_weight: 5            # RI is rare → upweight positive class
+
+# ── Physics Correction (Stage 11) ──
+physics:
+  max_track_speed_kt: 30          # max displacement per 6h
+  max_intensity_change_kt: 40     # max Δ wind per 6h (non-RI)
+  sst_threshold_c: 26.5           # min SST for sustained cyclone
+  landfall_decay_rate: 0.9        # Kaplan-DeMaria exponential factor
+
+# ── Training ──
+training:
+  batch_size: 8
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-5
+  epochs: 100
+  warmup_epochs: 5
+  scheduler: "cosine"
+  early_stopping_patience: 15
+  mixed_precision: true           # fp16 on Colab GPU
+  gradient_clip_norm: 1.0
+  device: "auto"                  # auto-detect cuda/cpu

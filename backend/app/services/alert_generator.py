@@ -1,0 +1,242 @@
+"""
+Stage 16 — Alert Dissemination: CAP XML Alert Generator.
+
+Generates Common Alerting Protocol (CAP) v1.2 compliant XML from storm risk data.
+PROTOTYPE ONLY — status is always "Test". Never implies live government integration.
+"""
+
+import logging
+import uuid
+from datetime import datetime, timedelta, timezone
+from typing import Any, Optional
+from lxml import etree
+
+logger = logging.getLogger(__name__)
+
+# CAP 1.2 namespace
+CAP_NS = "urn:oasis:names:tc:emergency:cap:1.2"
+CAP_NSMAP = {None: CAP_NS}
+
+
+def _assess_severity(wind_knots: float) -> str:
+    """Map wind speed to CAP severity level."""
+    if wind_knots >= 90:
+        return "Extreme"
+    elif wind_knots >= 64:
+        return "Severe"
+    elif wind_knots >= 48:
+        return "Moderate"
+    else:
+        return "Minor"
+
+
+def _assess_urgency(eta_str: Optional[str]) -> str:
+    """Map landfall ETA to CAP urgency level."""
+    if eta_str is None:
+        return "Future"
+
+    try:
+        if isinstance(eta_str, str):
+            # Parse ISO 8601
+            eta = datetime.fromisoformat(eta_str.replace("Z", "+00:00"))
+        elif isinstance(eta_str, datetime):
+            eta = eta_str
+        else:
+            return "Future"
+
+        now = datetime.now(timezone.utc)
+        hours_until = (eta - now).total_seconds() / 3600.0
+
+        if hours_until <= 6:
+            return "Immediate"
+        elif hours_until <= 24:
+            return "Expected"
+        else:
+            return "Future"
+    except Exception:
+        return "Future"
+
+
+def _assess_certainty(confidence: float) -> str:
+    """Map detection confidence to CAP certainty level."""
+    if confidence >= 0.9:
+        return "Observed"
+    elif confidence >= 0.7:
+        return "Likely"
+    elif confidence >= 0.5:
+        return "Possible"
+    else:
+        return "Unlikely"
+
+
+def _imd_category_name(category: str) -> str:
+    """Full name of IMD category."""
+    names = {
+        "SuCS": "Super Cyclonic Storm",
+        "ESCS": "Extremely Severe Cyclonic Storm",
+        "VSCS": "Very Severe Cyclonic Storm",
+        "SCS": "Severe Cyclonic Storm",
+        "CS": "Cyclonic Storm",
+        "DD": "Deep Depression",
+        "D": "Depression",
+    }
+    return names.get(category, category)
+
+
+def generate_cap_xml(
+    storm_id: str,
+    storm_name: str,
+    current_state: dict[str, Any],
+    forecast: dict[str, Any],
+    impact: dict[str, Any] | None = None,
+    detection: dict[str, Any] | None = None,
+) -> tuple[str, dict[str, Any]]:
+    """
+    Generate a CAP 1.2 XML alert document.
+
+    Returns:
+        Tuple of (xml_string, alert_metadata_dict)
+    """
+    now = datetime.now(timezone.utc)
+    alert_id = f"SIH2K26-{storm_id}-{now.strftime('%Y%m%dT%H%M%S')}-{uuid.uuid4().hex[:6]}"
+
+    # Extract data
+    wind_knots = current_state.get("max_wind_knots", 50)
+    pressure = current_state.get("min_pressure_hpa", 990)
+    category = current_state.get("category", "CS")
+    lat = current_state.get("lat", 0)
+    lon = current_state.get("lon", 0)
+
+    # Assess risk levels
+    severity = _assess_severity(wind_knots)
+    landfall_eta = None
+    if impact:
+        landfall_eta = impact.get("landfall_eta")
+    urgency = _assess_urgency(landfall_eta)
+    confidence = detection.get("confidence", 0.8) if detection else 0.8
+    certainty = _assess_certainty(confidence)
+
+    category_name = _imd_category_name(category)
+
+    # Build headline and description
+    headline = f"Tropical Cyclone Warning: {storm_name} — {category_name}"
+    description = (
+        f"{storm_name} is classified as a {category_name} ({category}) "
+        f"with maximum sustained winds of {wind_knots} knots and "
+        f"minimum central pressure of {pressure} hPa. "
+        f"Current position: {lat:.1f}°N, {lon:.1f}°E."
+    )
+    if impact and impact.get("landfall_location"):
+        lf = impact["landfall_location"]
+        description += (
+            f" Landfall estimated near {lf.get('lat', 0):.1f}°N, {lf.get('lon', 0):.1f}°E"
+        )
+        if landfall_eta:
+            description += f" at approximately {landfall_eta}"
+        description += "."
+
+    instruction = (
+        "PROTOTYPE ALERT — NOT FOR OPERATIONAL USE. "
+        "If this were a real alert: Residents in coastal areas within the projected "
+        "impact zone should monitor official weather advisories and prepare for "
+        "possible evacuation. Secure loose objects, stock emergency supplies, "
+        "and stay away from the coast."
+    )
+
+    # ── Build XML ──
+    alert = etree.Element("alert", nsmap=CAP_NSMAP)
+
+    _add_elem(alert, "identifier", alert_id)
+    _add_elem(alert, "sender", "SIH-2K26 Cyclone Prediction System (PROTOTYPE)")
+    _add_elem(alert, "sent", now.strftime("%Y-%m-%dT%H:%M:%S+00:00"))
+    _add_elem(alert, "status", "Test")  # ALWAYS Test — prototype only
+    _add_elem(alert, "msgType", "Alert")
+    _add_elem(alert, "scope", "Public")
+    _add_elem(alert, "note",
+              "This is a PROTOTYPE alert generated by the SIH-2K26 system. "
+              "NOT for operational use or public dissemination.")
+
+    # <info> block
+    info = etree.SubElement(alert, "info")
+    _add_elem(info, "language", "en-IN")
+    _add_elem(info, "category", "Met")
+    _add_elem(info, "event", f"Tropical Cyclone — {category_name}")
+    _add_elem(info, "responseType", "Prepare")
+    _add_elem(info, "urgency", urgency)
+    _add_elem(info, "severity", severity)
+    _add_elem(info, "certainty", certainty)
+
+    _add_elem(info, "effective", now.strftime("%Y-%m-%dT%H:%M:%S+00:00"))
+    expires = now + timedelta(hours=6)
+    _add_elem(info, "expires", expires.strftime("%Y-%m-%dT%H:%M:%S+00:00"))
+
+    _add_elem(info, "senderName", "SIH-2K26 Cyclone Prediction System")
+    _add_elem(info, "headline", headline)
+    _add_elem(info, "description", description)
+    _add_elem(info, "instruction", instruction)
+
+    # <parameter> elements for storm details
+    _add_param(info, "WindSpeed_knots", str(wind_knots))
+    _add_param(info, "Pressure_hPa", str(pressure))
+    _add_param(info, "IMD_Category", category)
+    _add_param(info, "StormID", str(storm_id))
+
+    # <area> block
+    area = etree.SubElement(info, "area")
+    _add_elem(area, "areaDesc",
+              f"Potential impact area of {storm_name}")
+
+    # Add impact zone polygon if available
+    if impact and impact.get("impact_zone_geojson"):
+        zone = impact["impact_zone_geojson"]
+        if "geometry" in zone and "coordinates" in zone["geometry"]:
+            coords = zone["geometry"]["coordinates"]
+            if coords and coords[0]:
+                # CAP polygon format: space-separated "lat,lon" pairs
+                cap_polygon = " ".join(
+                    f"{pt[1]},{pt[0]}" for pt in coords[0]
+                )
+                _add_elem(area, "polygon", cap_polygon)
+
+    # Current position as circle
+    _add_elem(area, "circle", f"{lat},{lon} 50")
+
+    # ── Serialize to string ──
+    xml_str = etree.tostring(
+        alert,
+        pretty_print=True,
+        xml_declaration=True,
+        encoding="UTF-8",
+    ).decode("utf-8")
+
+    # ── Build metadata ──
+    metadata = {
+        "storm_id": storm_id,
+        "alert_id": alert_id,
+        "status": "Test",
+        "msg_type": "Alert",
+        "severity": severity,
+        "urgency": urgency,
+        "certainty": certainty,
+        "headline": headline,
+        "description": description,
+        "effective": now.isoformat(),
+        "expires": expires.isoformat(),
+        "sender": "SIH-2K26 Cyclone Prediction System (PROTOTYPE)",
+    }
+
+    return xml_str, metadata
+
+
+def _add_elem(parent: etree._Element, tag: str, text: str):
+    """Helper to add a text sub-element."""
+    elem = etree.SubElement(parent, tag)
+    elem.text = text
+    return elem
+
+
+def _add_param(info: etree._Element, name: str, value: str):
+    """Add a <parameter> with <valueName> and <value> children."""
+    param = etree.SubElement(info, "parameter")
+    _add_elem(param, "valueName", name)
+    _add_elem(param, "value", value)
